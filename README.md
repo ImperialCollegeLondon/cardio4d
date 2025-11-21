@@ -1,4 +1,4 @@
-# Genetic–exposome axis orchestrates cardiac motion patterns
+# Genetic–Exposome Axis Orchestrates Cardiac Motion Patterns
 
 
 This repository contains the code and models used to study large-scale patterns of human 
