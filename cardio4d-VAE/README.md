@@ -5,27 +5,18 @@ Cardio4D-VAE is a spatiotemporal β-VAE developed to learn compact, generative r
 Trained in an unsupervised setting on UK Biobank participants, the model encodes each cardiac cycle into a $d$-dimensional latent space capturing both anatomical shape and temporal deformation patterns.
 
 
+---
 
-## Workflow
-
-### 1. Preprocessing
-- Extract LV mesh sequences (e.g., using [DeepMesh](https://github.com/ImperialCollegeLondon/DeepMesh)).
-- Spatially align each subject’s LV mesh to a common reference.
-
-
-### 2. Training (`train_vae.py`)
+### 1. Training (`train_vae.py`)
 - Train Cardio4D-VAE to learn a probabilistic d-dimensional latent representation.
 - The β-VAE objective encourages disentangled and interpretable latent factors.
 - Periodically saves model checkpoints and latent embeddings.
 
-### 3. Evaluation (`test_vae.py`)
+### 2. Evaluation (`test_vae.py`)
 - Load a trained model and evaluate reconstruction quality.
 - Extract per-subject latent vectors $Z_i \in \mathbb{R}^d$.
 - Generate reconstructed or synthetic LV motion sequences.
 
-### 4. Downstream Analysis
-Latent embeddings can be used for:
-................
 ---
 
 ## Citation
