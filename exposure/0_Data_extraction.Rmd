@@ -1,0 +1,176 @@
+---
+title: "0.1_Data_extraction"
+output: html_document
+date: "2025-11-20"
+---
+
+IMPORT LIBRARIES AND CALL SPARK FUNCTIONS
+
+```{python}
+import pyspark
+import dxpy
+import dxdata
+import pandas as pd
+import numpy as np
+
+sc = pyspark.SparkContext()
+spark = pyspark.sql.SparkSession(sc)
+
+dispensed_database = dxpy.find_one_data_object(
+    classname='database', 
+    name='app*', 
+    folder='/', 
+    name_mode='glob', 
+    describe=True)
+dispensed_database_name = dispensed_database['describe']['name']
+
+dispensed_dataset = dxpy.find_one_data_object(
+    typename='Dataset', 
+    name='app*.dataset', 
+    folder='/', 
+    name_mode='glob')
+dispensed_dataset_id = dispensed_dataset['id']
+
+dataset = dxdata.load_dataset(id=dispensed_dataset_id) # load dataset
+participant = dataset["participant"] #select participant entity
+```
+
+
+EXTRACT ENVIRONMENTAL FACTORS
+(ref to Argentero et al. for data dictionary https://github.com/miargentieri/exposome-aging-ukb/blob/main/dictionaries/PheWAS_data_dictionary_jan_30_2023.csv)
+
+```{python}
+
+fields = [
+    
+  'eid',
+  
+  # Early life factors
+  'p1647_i0','p1677_i0','p1687_i0','p1697_i0','p1707_i0','p1777_i0','p1787_i0','p20022_i0',
+    
+  #Stressful life events
+    'p6145_i0',
+  
+  # Social support
+  'p1031_i0','p6160_i0','p2110_i0','p2020_i0',
+  
+  # Household
+  'p670_i0','p680_i0','p6139_i0','p6140_i0','p699_i0','p709_i0','p6141_i0','p738_i0',
+  
+  # Employment
+  'p6142_i0',
+  
+  # Other sociodemographics
+  'p4674_i0',
+  
+  # Supplements
+  'p6155_i0','p6179_i0',
+  
+  # Male reproductive factors
+  'p2375_i0','p2385_i0','p2395_i0','p2405_i0',
+  
+  # Female reproductive factors
+  'p2674_i0','p2694_i0','p2714_i0','p2724_i0','p3581_i0','p2734_i0','p3872_i0',
+  'p2754_i0','p2764_i0','p2774_i0','p2784_i0','p2814_i0','p3591_i0','p2834_i0',
+  
+  # Mental health
+  'p20127_i0','p1920_i0','p1930_i0','p1940_i0','p1950_i0','p1960_i0','p1970_i0','p1980_i0',
+  'p1990_i0','p2000_i0','p2010_i0','p2030_i0','p2040_i0','p2050_i0','p2060_i0','p2070_i0',
+  'p2080_i0','p4598_i0','p4631_i0','p4642_i0','p4653_i0',
+  
+  # Life satisfaction
+  'p4526_i0','p4537_i0','p4559_i0','p4570_i0','p4581_i0',
+  
+  # Electronics use
+  'p1120_i0','p1130_i0','p2237_i0',
+  
+  # Sleep
+  'p1170_i0','p1180_i0','p1190_i0','p1200_i0','p1210_i0',
+  
+  # Smoking
+  'p20160_i0','p20162_i0','p20161_i0','p20116_i0','p1239_i0',
+  
+  # Alcohol
+  'p1558_i0',
+  
+  # Diet
+  'p1329_i0','p1339_i0','p1349_i0','p1359_i0','p1408_i0','p1478_i0','p1488_i0',
+  'p1498_i0','p1528_i0','p1538_i0','p1548_i0',
+  
+  # Sun exposure
+  'p1050_i0','p1060_i0','p1727_i0','p1737_i0','p2267_i0','p2277_i0',
+  
+  # Sexual history
+  'p2159_i0',
+  
+  # Physical activity
+  'p22032_i0',
+  
+  # Material deprivation
+  'p22189',
+  
+  # Physical environment
+  'p24014','p24012','p24010','p24016','p24017','p24018','p24003','p24004',
+  'p24019','p24005','p24007','p24006','p24008','p24015','p24013','p24011',
+  'p24009','p24023','p24024','p24020','p24021','p24022',
+  'p24506_i0','p24507_i0','p24500_i0','p24503_i0','p24501_i0','p24504_i0',
+  'p24502_i0','p24505_i0','p24508_i0','p20118_i0',
+    
+   # Other variables for preprocessing but not for XWAS
+   'p1767_i0', #adopted as child, to exclude
+   'p31',      #sex
+   'p1160_i0', #sleep hours
+   'p1309_i0', #fresh fruit
+   'p1319_i0', #dry fruit
+   'p1289_i0', #cooked vegetables
+   'p1299_i0', #salad or raw veg
+   'p1448_i0', #bread type
+   'p1468_i0', #cereal type 
+   'p1070_i0', #time spent watching television
+   'p1080_i0', #time spent with computer
+   'p1090_i0', # driving time
+   'p1369_i0', #beef
+   'p1379_i0', #lamb
+   'p1389_i0', #pork
+   
+   'p1458_i0', #cereal
+   'p1438_i0', #bread
+   'p981_i0',  #pleasure_walks_duration
+   'p971_i0',  #pleasure_walks_freq_4wks 
+   'p3647_i0', #Duration of other exercises
+   'p3637_i0', #Frequency of other exercises in last 4 weeks
+   'p1001_i0', #Duration of strenuous sports
+   'p991_i0',  #Frequency of strenuous sports in last 4 weeks
+   'p2634_i0', #Duration of heavy DIY
+   'p2624_i0', #Frequency of heavy DIY in last 4 weeks
+   'p1021_i0', #Duration of light DIY
+   'p1011_i0', #Frequency of light DIY in last 4 weeks 
+   'p767_i0',  #Length of working week for main job
+   'p816_i0',  #Job involves heavy manual or physical work
+   'p806_i0',  #Job involves mainly walking or standing
+   'p20117_i0', #Alcohol drinker status 
+   'p6164_i0', #Types of physical activity in last 4 weeks     
+    
+    ]
+```
+
+
+```{python}
+fieldnames = fields
+
+df = participant.retrieve_fields(names=fieldnames,engine=dxdata.connect(dialect="hive+pyspark"))
+
+df_pandas = df.toPandas() 
+
+df1 = df_pandas.fillna(value='NA')
+
+df1.head()
+
+df1.to_csv('extracted_environmental_factors.csv')
+
+%%bash
+dx upload extracted_environmental_factors.csv --path #####YOUR PATH
+
+
+```
+
